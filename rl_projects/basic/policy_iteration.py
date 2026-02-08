@@ -1,11 +1,14 @@
+from typing import Any
+
 import numpy as np
+from gymnasium.wrappers.common import TimeLimit
 
 from rl_projects.basic.policy_evaluation import policy_evaluation
 from rl_projects.basic.policy_improvement import policy_improvement
 from rl_projects.envs.frozen_lake import random_stochastic_policy
 
 
-def policy_iteration(env, gamma=1.0, theta=1e-10):
+def policy_iteration(env: Any, gamma: float = 1.0, theta: float = 1e-10):
     mdp = env.unwrapped.P
     policy = random_stochastic_policy(env)
 
@@ -31,7 +34,7 @@ if __name__ == "__main__":
     gamma = 0.9
 
     env = get_default_env()
-    mdp = env.unwrapped.P
+    mdp = env.unwrapped.P  # type: ignore
 
     iterated_V, iterated_policy = policy_iteration(env, gamma=gamma)
     optimal_V = policy_evaluation(OPTIMAL_FROZEN_LAKE_POLICY, mdp, gamma=gamma)
