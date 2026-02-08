@@ -1,8 +1,21 @@
-"""
-Utility functions for frozen lake.
-"""
-
+import gymnasium as gym
 import numpy as np
+
+
+def get_default_env(
+    render_mode="ansi", is_slippery=False, success_rate=1.0 / 3.0, map_name="4x4"
+):
+    env = gym.make(
+        "FrozenLake-v1",
+        desc=None,
+        map_name=map_name,
+        is_slippery=is_slippery,
+        success_rate=success_rate,
+        reward_schedule=(1, 0, 0),
+        render_mode=render_mode,
+    )
+
+    return env
 
 
 def random_deterministic_policy(env):

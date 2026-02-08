@@ -1,5 +1,6 @@
 import numpy as np
-from utils import random_stochastic_policy
+
+from rl_projects.envs.frozen_lake import random_stochastic_policy
 
 
 def compute_Q_function(V, mdp, gamma=1.0):
@@ -24,7 +25,8 @@ if __name__ == "__main__":
     import gymnasium as gym
     import matplotlib.pyplot as plt
     import seaborn as sns
-    from policy_evaluation import policy_evaluation
+
+    from rl_projects.basic.policy_evaluation import policy_evaluation
 
     env = gym.make(
         "FrozenLake-v1",

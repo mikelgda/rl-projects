@@ -47,17 +47,14 @@ if __name__ == "__main__":
     import gymnasium as gym
     import matplotlib.pyplot as plt
     import seaborn as sns
-    from utils import OPTIMAL_FROZEN_LAKE_POLICY, random_stochastic_policy
 
-    env = gym.make(
-        "FrozenLake-v1",
-        desc=None,
-        map_name="4x4",
-        is_slippery=False,
-        success_rate=1.0 / 3.0,
-        reward_schedule=(1, 0, 0),
-        render_mode="ansi",
+    from rl_projects.envs.frozen_lake import (
+        OPTIMAL_FROZEN_LAKE_POLICY,
+        get_default_env,
+        random_stochastic_policy,
     )
+
+    env = get_default_env()
 
     mdp = env.unwrapped.P
 

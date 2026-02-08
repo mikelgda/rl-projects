@@ -1,7 +1,8 @@
 import numpy as np
-from policy_evaluation import policy_evaluation
-from policy_improvement import policy_improvement
-from utils import random_stochastic_policy
+
+from rl_projects.basic.policy_evaluation import policy_evaluation
+from rl_projects.basic.policy_improvement import policy_improvement
+from rl_projects.envs.frozen_lake import random_stochastic_policy
 
 
 def policy_iteration(env, gamma=1.0, theta=1e-10):
@@ -25,7 +26,8 @@ if __name__ == "__main__":
     import gymnasium as gym
     import matplotlib.pyplot as plt
     import seaborn as sns
-    from utils import OPTIMAL_FROZEN_LAKE_POLICY
+
+    from rl_projects.envs.frozen_lake import OPTIMAL_FROZEN_LAKE_POLICY
 
     gamma = 0.9
 
