@@ -1,7 +1,10 @@
-from typing import Any, cast
+from typing import Any, Tuple, cast
 
 import gymnasium as gym
+import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
+from matplotlib.axes import Axes
 from numpy.typing import NDArray
 
 
@@ -87,3 +90,26 @@ OPTIMAL_FROZEN_LAKE_POLICY = np.array(
         [1, 0, 0, 0],
     ]
 )
+
+
+def visualize_Q_function(
+    Q: NDArray, grid_shape: Tuple[int, int] = (4, 4), ax: Axes | None = None
+):
+    rows = [[] for _ in range(grid_shape[0])]
+    for i, actions in enumerate(Q):
+        current_row = i % grid_shape[0]
+        action_block = np.array([None] * 9).reshape(3, 3)
+        action_block[0, 1] = actions[3]
+        action_block[1, 0] = actions[0]
+        action_block[1, 2] = actions[2]
+        action_block[2, 1] = actions[1]
+        action_block = action_block.astype(float)
+        rows[current_row].append(action_block)
+
+    board = np.concatenate([np.concatenate(row).T for row in rows])
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(10, 10))
+    sns.heatmap(board.T, annot=True, cmap="viridis", cbar=False, ax=ax)
+
+    return ax
