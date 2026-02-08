@@ -1,7 +1,10 @@
 import numpy as np
+from numpy.typing import NDArray
 
 
-def policy_evaluation(policy, mdp, gamma=1.0, theta=1e-10):
+def policy_evaluation(
+    policy: NDArray, mdp: dict[int, dict], gamma: float = 1.0, theta: float = 1e-10
+):
     """
     Evaluate a policy in a Markov Decision Process (MDP).
 
@@ -44,7 +47,6 @@ def policy_evaluation(policy, mdp, gamma=1.0, theta=1e-10):
 
 
 if __name__ == "__main__":
-    import gymnasium as gym
     import matplotlib.pyplot as plt
     import seaborn as sns
 

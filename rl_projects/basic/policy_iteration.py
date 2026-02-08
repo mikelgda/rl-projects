@@ -23,28 +23,18 @@ def policy_iteration(env, gamma=1.0, theta=1e-10):
 
 
 if __name__ == "__main__":
-    import gymnasium as gym
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    from rl_projects.envs.frozen_lake import OPTIMAL_FROZEN_LAKE_POLICY
+    from rl_projects.envs.frozen_lake import OPTIMAL_FROZEN_LAKE_POLICY, get_default_env
 
     gamma = 0.9
 
-    env = gym.make(
-        "FrozenLake-v1",
-        desc=None,
-        map_name="4x4",
-        is_slippery=False,
-        success_rate=1.0 / 3.0,
-        reward_schedule=(1, 0, 0),
-        render_mode="ansi",
-    )
+    env = get_default_env()
+    mdp = env.unwrapped.P
 
     iterated_V, iterated_policy = policy_iteration(env, gamma=gamma)
-    optimal_V = policy_evaluation(
-        OPTIMAL_FROZEN_LAKE_POLICY, env.unwrapped.P, gamma=gamma
-    )
+    optimal_V = policy_evaluation(OPTIMAL_FROZEN_LAKE_POLICY, mdp, gamma=gamma)
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     sns.heatmap(

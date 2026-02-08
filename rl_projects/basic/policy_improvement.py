@@ -1,9 +1,10 @@
 import numpy as np
+from numpy.typing import NDArray
 
 from rl_projects.envs.frozen_lake import random_stochastic_policy
 
 
-def compute_Q_function(V, mdp, gamma=1.0):
+def compute_Q_function(V: NDArray, mdp: dict[int, dict], gamma: float = 1.0):
     Q = np.zeros((len(mdp), len(mdp[0])), dtype=np.float64)
 
     for state in range(len(mdp)):
@@ -14,7 +15,7 @@ def compute_Q_function(V, mdp, gamma=1.0):
     return Q
 
 
-def policy_improvement(V, mdp, gamma=1.0):
+def policy_improvement(V: NDArray, mdp: dict[int, dict], gamma: float = 1.0):
     Q = compute_Q_function(V, mdp, gamma)
     new_Q = np.zeros_like(Q)
     new_Q[np.arange(len(Q)), np.argmax(Q, axis=1)] = 1
@@ -22,21 +23,13 @@ def policy_improvement(V, mdp, gamma=1.0):
 
 
 if __name__ == "__main__":
-    import gymnasium as gym
     import matplotlib.pyplot as plt
     import seaborn as sns
 
     from rl_projects.basic.policy_evaluation import policy_evaluation
+    from rl_projects.envs.frozen_lake import get_default_env
 
-    env = gym.make(
-        "FrozenLake-v1",
-        desc=None,
-        map_name="4x4",
-        is_slippery=False,
-        success_rate=1.0 / 3.0,
-        reward_schedule=(1, 0, 0),
-        render_mode="ansi",
-    )
+    env = get_default_env()
 
     mdp = env.unwrapped.P
 
