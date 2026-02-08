@@ -4,7 +4,7 @@ from numpy.typing import NDArray
 from rl_projects.envs.frozen_lake import random_stochastic_policy
 
 
-def compute_Q_function(V: NDArray, mdp: dict[int, dict], gamma: float = 1.0):
+def compute_Q_function(V: NDArray, mdp: dict[int, dict], gamma: float = 1.0) -> NDArray:
     Q = np.zeros((len(mdp), len(mdp[0])), dtype=np.float64)
 
     for state in range(len(mdp)):
@@ -15,7 +15,7 @@ def compute_Q_function(V: NDArray, mdp: dict[int, dict], gamma: float = 1.0):
     return Q
 
 
-def policy_improvement(V: NDArray, mdp: dict[int, dict], gamma: float = 1.0):
+def policy_improvement(V: NDArray, mdp: dict[int, dict], gamma: float = 1.0) -> NDArray:
     Q = compute_Q_function(V, mdp, gamma)
     new_Q = np.zeros_like(Q)
     new_Q[np.arange(len(Q)), np.argmax(Q, axis=1)] = 1
@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     env = get_default_env()
 
-    mdp = env.unwrapped.P
+    mdp = env.unwrapped.P  # type: ignore
 
     gamma = 0.9
 

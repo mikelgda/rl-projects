@@ -4,7 +4,7 @@ from numpy.typing import NDArray
 
 def policy_evaluation(
     policy: NDArray, mdp: dict[int, dict], gamma: float = 1.0, theta: float = 1e-10
-):
+) -> NDArray:
     """
     Evaluate a policy in a Markov Decision Process (MDP).
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     env = get_default_env()
 
-    mdp = env.unwrapped.P
+    mdp = env.unwrapped.P  # type: ignore
 
     random_policy = random_stochastic_policy(env)
 
