@@ -113,3 +113,101 @@ def visualize_Q_function(
     sns.heatmap(board.T, annot=True, cmap="viridis", cbar=False, ax=ax)
 
     return ax
+
+
+def visualize_Q_function_v2(
+    Q: NDArray, grid_shape: Tuple[int, int] = (4, 4), ax: Axes | None = None
+):
+    """Visualize Q-function with arrows showing action values.
+
+    Args:
+        Q: Q-function array of shape (n_states, n_actions)
+        grid_shape: Shape of the grid environment
+        ax: Optional matplotlib axes to plot on
+
+    Returns:
+        The matplotlib axes object
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(grid_shape[1] * 2, grid_shape[0] * 2))
+
+    # Get min/max Q values for consistent colorscale
+    q_min, q_max = Q.min(), Q.max()
+
+    # Action directions: [left, down, right, up]
+    arrow_dx = [-0.35, 0, 0.35, 0]
+    arrow_dy = [0, -0.35, 0, 0.35]
+
+    # Create a grid background
+    for i in range(grid_shape[0] + 1):
+        ax.axhline(i, color="gray", linewidth=1)
+    for j in range(grid_shape[1] + 1):
+        ax.axvline(j, color="gray", linewidth=1)
+
+    # Plot arrows for each state
+    for state in range(Q.shape[0]):
+        row = state // grid_shape[1]
+        col = state % grid_shape[1]
+
+        # Center of the cell
+        cx, cy = col + 0.5, grid_shape[0] - row - 0.5
+
+        for action in range(4):
+            q_value = Q[state, action]
+
+            # Normalize color based on Q value
+            if q_max > q_min:
+                color_intensity = (q_value - q_min) / (q_max - q_min)
+            else:
+                color_intensity = 0.5
+
+            # Color from red (low) to green (high)
+            color = plt.cm.RdYlGn(color_intensity)
+
+            # Draw arrow
+            ax.arrow(
+                cx,
+                cy,
+                arrow_dx[action],
+                arrow_dy[action],
+                head_width=0.15,
+                head_length=0.1,
+                fc=color,
+                ec="black",
+                linewidth=1.5,
+                alpha=0.8,
+            )
+
+            # Add text with Q value
+            text_x = cx + arrow_dx[action] * 1.3
+            text_y = cy + arrow_dy[action] * 1.3
+            ax.text(
+                text_x,
+                text_y,
+                f"{q_value:.2f}",
+                ha="center",
+                va="center",
+                fontsize=8,
+                weight="bold",
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.7),
+            )
+
+    # Set axis properties
+    ax.set_xlim(0, grid_shape[1])
+    ax.set_ylim(0, grid_shape[0])
+    ax.set_aspect("equal")
+    ax.invert_yaxis()
+    ax.set_xticks(range(grid_shape[1] + 1))
+    ax.set_yticks(range(grid_shape[0] + 1))
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_title("Q-Function Visualization", fontsize=14, weight="bold")
+
+    # Add colorbar
+    sm = plt.cm.ScalarMappable(
+        cmap="RdYlGn", norm=plt.Normalize(vmin=q_min, vmax=q_max)
+    )
+    sm.set_array([])
+    plt.colorbar(sm, ax=ax, label="Q-Value")
+
+    return ax
