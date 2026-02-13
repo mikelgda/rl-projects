@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 from tqdm import tqdm
 
-from .utils import collect_trajectory, decay_schedule
+from .utils import collect_trajectory_from_policy, decay_schedule
 
 
 def td_policy_evaluation(
@@ -119,7 +119,7 @@ def forward_td_lambda_policy_evaulation(
     lambda_val: float = 0.05,
     initial_alpha: float = 0.5,
     min_alpha: float = 0.01,
-    alpha_decay_rate: float = 0.5,
+    alpha_decay_rate: float = 0.3,
     max_steps: int = 100,
     n_episodes: int = 500,
 ):
@@ -140,7 +140,7 @@ def forward_td_lambda_policy_evaulation(
     V_per_episode = np.zeros((n_episodes, n_states))
 
     for episode in range(n_episodes):
-        trajectory = collect_trajectory(env, policy, max_steps)
+        trajectory = collect_trajectory_from_policy(env, policy, max_steps)
         n = len(trajectory)
 
         for j in range(n - 1):
@@ -162,6 +162,54 @@ def forward_td_lambda_policy_evaulation(
 
             td_target = np.sum(np.array(g_values) * np.array(lambdas))
             V[est_state] += alphas[episode] * (td_target - V[est_state])
+
+        V_per_episode[episode] = V
+
+    return V, V_per_episode
+
+
+def td_lambda_policy_evaluation(
+    env,
+    policy: np.ndarray,
+    gamma: float = 1.0,
+    lambda_val: float = 0.3,
+    initial_alpha: float = 0.5,
+    min_alpha: float = 0.01,
+    alpha_decay_rate: float = 0.3,
+    max_steps: int = 100,
+    n_episodes: int = 500,
+):
+
+    n_states = env.observation_space.n
+
+    alphas = decay_schedule(
+        initial_value=initial_alpha,
+        min_value=min_alpha,
+        decay_rate=alpha_decay_rate,
+        max_steps=n_episodes,
+    )
+
+    V = np.zeros(env.observation_space.n)
+
+    V_per_episode = np.zeros((n_episodes, n_states))
+
+    traces = np.zeros(n_states)
+
+    for episode in tqdm(range(n_episodes)):
+        traces.fill(0)
+
+        state, _ = env.reset()
+        done = False
+        while not done:
+            action = np.random.multinomial(n=1, pvals=policy[state]).argmax().item()
+            next_state, reward, done, truncated, _ = env.step(action)
+
+            td_target = reward + gamma * V[next_state] * (not done)
+            traces[state] += 1
+            V += alphas[episode] * (td_target - V[state]) * traces
+            traces *= gamma * lambda_val
+
+            state = next_state
 
         V_per_episode[episode] = V
 

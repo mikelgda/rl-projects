@@ -1,7 +1,9 @@
+from typing import Callable
+
 import numpy as np
 
 
-def collect_trajectory(env, policy, max_steps=20):
+def collect_trajectory_from_policy(env, policy, max_steps=20):
     trajectory = []
     done = False
     while not done:
@@ -18,6 +20,40 @@ def collect_trajectory(env, policy, max_steps=20):
             if t >= max_steps - 1:
                 trajectory = []
                 break
+            state = next_state
+
+    return np.array(trajectory, dtype=object)
+
+
+def collect_trajectory_from_Q_function(
+    Q: np.ndarray,
+    env,
+    choice_method: Callable,
+    episode: int = 0,
+    max_steps: int = 200,
+    **choice_method_kwargs,
+):
+    done = False
+    trajectory = []
+
+    while not done:
+        state, _ = env.reset()
+
+        for i in range(max_steps):
+
+            action = choice_method(state, Q, episode=episode, **choice_method_kwargs)
+            next_state, reward, done, truncated, _ = env.step(action)
+            experience = (state, action, reward, next_state, done, truncated)
+
+            trajectory.append(experience)
+
+            if done or truncated:
+                break
+
+            if i >= max_steps - 1:
+                trajectory = []
+                break
+
             state = next_state
 
     return np.array(trajectory, dtype=object)
