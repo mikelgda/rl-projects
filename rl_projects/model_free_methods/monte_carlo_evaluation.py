@@ -49,25 +49,3 @@ def monte_carlo_policy_evaluation(
         V_per_episode[episode] = V
 
     return V, V_per_episode
-
-
-def epsilon_greedy_choice(
-    state,
-    Q,
-    episode,
-    max_episodes=10_000,
-    initial_epsilon=1.0,
-    min_epsilon=0.01,
-    decay_rate=0.9,
-):
-    epsilon = decay_schedule(
-        initial_value=initial_epsilon,
-        min_value=min_epsilon,
-        decay_rate=decay_rate,
-        max_steps=max_episodes,
-    )[episode]
-
-    if np.random.random() > epsilon:
-        return np.argmax(Q[state]).item()
-    else:
-        return np.random.randint(Q.shape[1])

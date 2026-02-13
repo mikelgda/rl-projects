@@ -97,7 +97,7 @@ def visualize_Q_function(
 ):
     rows = [[] for _ in range(grid_shape[0])]
     for i, actions in enumerate(Q):
-        current_row = i % grid_shape[0]
+        current_row = i // grid_shape[1]
         action_block = np.array([None] * 9).reshape(3, 3)
         action_block[0, 1] = actions[3]
         action_block[1, 0] = actions[0]
@@ -106,18 +106,18 @@ def visualize_Q_function(
         action_block = action_block.astype(float)
         rows[current_row].append(action_block)
 
-    board = np.concatenate([np.concatenate(row).T for row in rows])
+    board = np.concatenate([np.concatenate(row, axis=1) for row in rows])
 
     if ax is None:
         _, ax = plt.subplots(figsize=(10, 10))
-    sns.heatmap(board.T, annot=True, cmap="viridis", cbar=False, ax=ax)
+    sns.heatmap(board, annot=True, cmap="viridis", cbar=False, ax=ax)
 
     return ax
 
 
 def visualize_Q_function_v2(
     Q: NDArray, grid_shape: Tuple[int, int] = (4, 4), ax: Axes | None = None
-):
+) -> Axes:
     """Visualize Q-function with arrows showing action values.
 
     Args:
@@ -128,6 +128,7 @@ def visualize_Q_function_v2(
     Returns:
         The matplotlib axes object
     """
+
     if ax is None:
         fig, ax = plt.subplots(figsize=(grid_shape[1] * 2, grid_shape[0] * 2))
 
@@ -136,7 +137,7 @@ def visualize_Q_function_v2(
 
     # Action directions: [left, down, right, up]
     arrow_dx = [-0.35, 0, 0.35, 0]
-    arrow_dy = [0, -0.35, 0, 0.35]
+    arrow_dy = [0, 0.35, 0, -0.35]
 
     # Create a grid background
     for i in range(grid_shape[0] + 1):
@@ -150,7 +151,7 @@ def visualize_Q_function_v2(
         col = state % grid_shape[1]
 
         # Center of the cell
-        cx, cy = col + 0.5, grid_shape[0] - row - 0.5
+        cx, cy = col + 0.5, row + 0.5
 
         for action in range(4):
             q_value = Q[state, action]
@@ -162,7 +163,7 @@ def visualize_Q_function_v2(
                 color_intensity = 0.5
 
             # Color from red (low) to green (high)
-            color = plt.cm.RdYlGn(color_intensity)
+            color = plt.cm.RdYlGn(color_intensity)  # type: ignore
 
             # Draw arrow
             ax.arrow(
@@ -179,8 +180,8 @@ def visualize_Q_function_v2(
             )
 
             # Add text with Q value
-            text_x = cx + arrow_dx[action] * 1.3
-            text_y = cy + arrow_dy[action] * 1.3
+            text_x = cx + arrow_dx[action] * 0.5
+            text_y = cy + arrow_dy[action] * 0.7
             ax.text(
                 text_x,
                 text_y,
@@ -205,7 +206,7 @@ def visualize_Q_function_v2(
 
     # Add colorbar
     sm = plt.cm.ScalarMappable(
-        cmap="RdYlGn", norm=plt.Normalize(vmin=q_min, vmax=q_max)
+        cmap="RdYlGn", norm=plt.Normalize(vmin=q_min, vmax=q_max)  # type: ignore
     )
     sm.set_array([])
     plt.colorbar(sm, ax=ax, label="Q-Value")
