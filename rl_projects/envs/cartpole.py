@@ -31,7 +31,7 @@ def render_episode(env, policy, max_steps=500, ax=None):
 
     for i in range(max_steps):  # Run for 100 steps
         action = policy(state)
-        _, _, terminated, truncated, _ = env.step(action)
+        state, _, terminated, truncated, _ = env.step(action)
         image = env.render()
 
         if im is None:
@@ -45,4 +45,4 @@ def render_episode(env, policy, max_steps=500, ax=None):
         display(fig)
 
         if terminated or truncated:
-            env.reset()
+            state, _ = env.reset()
