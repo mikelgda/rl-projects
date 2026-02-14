@@ -78,7 +78,7 @@ def tdn_policy_evaluation(
         done = False
         path = []
         while not done or (path is not None):
-            path = path[1:]
+            path = path[1:]  # type: ignore
 
             while not done and len(path) < n_steps:
                 action = np.random.multinomial(n=1, pvals=policy[state]).argmax().item()
@@ -98,7 +98,7 @@ def tdn_policy_evaluation(
             rewards = np.array(path)[:, 2]
             partial_return = gamma_discount[:n] * rewards
 
-            bs_val = gamma_discount[-1] * V[next_state] * (not done)
+            bs_val = gamma_discount[-1] * V[next_state] * (not done)  # type: ignore
 
             tdn_target = np.sum(np.append(partial_return, bs_val))
 
@@ -176,7 +176,6 @@ def td_lambda_policy_evaluation(
     initial_alpha: float = 0.5,
     min_alpha: float = 0.01,
     alpha_decay_rate: float = 0.3,
-    max_steps: int = 100,
     n_episodes: int = 500,
 ):
 
