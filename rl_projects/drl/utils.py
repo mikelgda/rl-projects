@@ -65,7 +65,12 @@ class MLP(nn.Module):
         return self.net(x)
 
 
-class EpsilonGreedyChoice:
+class ActionChoice:
+    def choose_action(self, q_values: ArrayLike) -> int:
+        raise NotImplementedError("Must implement choose_action method in subclass")
+
+
+class EpsilonGreedyChoice(ActionChoice):
     def __init__(self, epsilon: float = 0.1):
         self.epsilon = epsilon
 
@@ -89,3 +94,38 @@ class EpsilonGreedyChoice:
         else:
             # Exploit: choose the action with the highest Q-value
             return int(np.argmax(q_values))
+
+
+class ReplayBuffer:
+    def __init__(self, max_size: int = 50_000, batch_size: int = 64):
+        self.max_size = max_size
+        self.batch_size = batch_size
+
+        self._memory_keys = ["state", "action", "reward", "next_state", "failed"]
+
+        self.memory = {
+            key: np.empty(shape=(max_size), dtype=np.ndarray)
+            for key in self._memory_keys
+        }
+
+        self._offset = 0
+        self._buffer_size = 0
+
+    def store_experience(self, experience: Tuple):
+
+        for key, value in zip(self._memory_keys, experience):
+            self.memory[key][self._offset] = value
+
+        self._offset = (self._offset + 1) % self.max_size
+        self._buffer_size = min(self._buffer_size + 1, self.max_size)
+
+    def sample_batch(self, batch_size: int | None = None):
+        batch_size = batch_size or self.batch_size
+        indices = np.random.choice(self._buffer_size, size=batch_size, replace=False)
+
+        return tuple(
+            (np.vstack(self.memory[key][indices]) for key in self._memory_keys)  # type: ignore
+        )
+
+    def __len__(self):
+        return self._buffer_size

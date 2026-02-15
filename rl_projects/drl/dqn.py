@@ -1,34 +1,42 @@
 import gc
-from typing import Tuple
+from typing import Callable, Tuple
 
 import numpy as np
 import torch
 import torch.nn as nn
 
-from .utils import MLP, ActionChoice, EpsilonGreedyChoice, safe_tqdm
+from .utils import MLP, ActionChoice, EpsilonGreedyChoice, ReplayBuffer, safe_tqdm
 
 
-class NFQAgent:
+class DQNAgent:
 
     def __init__(
         self,
         env,
-        policy_model: nn.Module,
+        policy_factory: Callable[[], nn.Module],
         action_choice: ActionChoice = EpsilonGreedyChoice(),
         gamma: float = 1.0,
+        target_update_freq: int = 100,
         optimizer=torch.optim.RMSprop,
         device: torch.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         ),
+        loss_fn: nn.Module = nn.HuberLoss(),
+        replay_buffer_size: int = 10000,
+        n_batches_per_sample: int = 3,
     ) -> None:
-        self.policy_model = policy_model.to(device)
+        self.policy_model = policy_factory().to(device)
+        self.target_model = policy_factory().to(device)
         self.device = device
         self.action_choice = action_choice
         self.n_actions = env.action_space.n
         self.obs_dim = env.observation_space.shape[0]
-        self.experiences = []
         self.gamma = gamma
         self.optimizer = optimizer(self.policy_model.parameters(), lr=0.0005)
+        self.target_update_freq = target_update_freq
+        self.loss_fn = loss_fn
+        self.replay_buffer = ReplayBuffer(replay_buffer_size)
+        self.n_batches_per_sample_round = n_batches_per_sample
 
     def interact_with_env(self, state: np.ndarray, env) -> Tuple[np.ndarray, bool]:
         with torch.no_grad():
@@ -41,24 +49,30 @@ class NFQAgent:
         failed = done and not truncated
 
         experience = (state, action, reward, next_state, int(failed))
-        self.experiences.append(experience)
+        self.replay_buffer.store_experience(experience)
 
         return next_state, done
 
-    def train(
-        self, env, n_episodes: int = 3000, n_epochs: int = 40, batch_size: int = 96
-    ) -> None:
+    def train(self, env, n_episodes: int = 3000, n_epochs: int = 40) -> None:
+        time_step = 1
+        sampled_estimates = 0
         for episode in safe_tqdm(range(n_episodes), desc="Episode"):
             state, _ = env.reset()
+
             while True:
                 state, done = self.interact_with_env(state, env)
+                sampled_estimates += 1
 
-                if len(self.experiences) >= batch_size:
-                    experiences = self.process_experiences()
+                if sampled_estimates >= (
+                    self.n_batches_per_sample_round * self.replay_buffer.batch_size
+                ):
+                    experiences = self.replay_buffer.sample_batch()
+                    experiences = self.process_experiences(experiences)
                     for _ in range(n_epochs):
                         self.optimize_model(experiences)
 
-                    self.experiences.clear()
+                if time_step % self.target_update_freq == 0:
+                    self._update_target_model()
 
                 if done:
                     gc.collect()
@@ -71,50 +85,51 @@ class NFQAgent:
         ],
     ) -> None:
         states, actions, rewards, next_states, fails = experiences
-        max_q = self.policy_model(next_states).detach().max(1)[0].unsqueeze(1)
+        max_q = self.target_model(next_states).detach().max(1)[0].unsqueeze(1)
 
         q_values = self.policy_model(states).gather(1, actions)
 
         td_targets = rewards + self.gamma * max_q * (1 - fails)
 
-        td_error = td_targets - q_values
-
-        # MSE error
-        loss = td_error.pow(2).mul(0.5).mean()
+        loss = self.loss_fn(q_values, td_targets)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
     def process_experiences(
-        self,
+        self, experiences
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        states, actions, rewards, next_states, fails = experiences
         states = torch.tensor(
-            np.stack([exp[0] for exp in self.experiences]),
+            states,
             dtype=torch.float32,
             device=self.device,
         )
         actions = torch.tensor(
-            np.array([exp[1] for exp in self.experiences]),
+            actions,
             dtype=torch.long,
             device=self.device,
-        ).unsqueeze(1)
+        )
         rewards = torch.tensor(
-            np.array([exp[2] for exp in self.experiences]),
+            rewards,
             dtype=torch.float32,
             device=self.device,
-        ).unsqueeze(1)
+        )
         next_states = torch.tensor(
-            np.stack([exp[3] for exp in self.experiences]),
+            next_states,
             dtype=torch.float32,
             device=self.device,
         )
         fails = torch.tensor(
-            np.array([exp[4] for exp in self.experiences]),
+            fails,
             dtype=torch.float32,
             device=self.device,
-        ).unsqueeze(1)
+        )
 
         return states, actions, rewards, next_states, fails
+
+    def _update_target_model(self) -> None:
+        self.target_model.load_state_dict(self.policy_model.state_dict())
 
     def __call__(self, state: np.ndarray) -> int:
         state_tensor = torch.tensor(state, device=self.device, dtype=torch.float32)
